@@ -19,3 +19,4 @@ buildroot
 log
 .spc.cache.php
 sculpin-*
+craft.yml

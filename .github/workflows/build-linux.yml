@@ -10,18 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # Every arch builds natively with gcc, so arm64/arm32 run under QEMU emulation
         include:
           - arch: x86_64
-            target: ''
             platform: linux/amd64
           - arch: aarch64
-            target: aarch64-linux-musl
             platform: linux/arm64
           - arch: armv7l
-            target: arm-linux-musleabihf
             platform: linux/arm/v7
             # php_micro_fileinfo.c omits `typedef Elf32_Shdr Elf_Shdr` in arm32
-            compiler_extra: -DElf_Shdr=Elf32_Shdr
+            cflags_extra: -DElf_Shdr=Elf32_Shdr
 
     steps:
       - uses: actions/checkout@v4
@@ -34,10 +32,9 @@ jobs:
 
       - name: Build with Docker
         run: |
-          docker buildx build --load --platform linux/amd64 \
-            --build-arg SPC_TARGET=${{ matrix.target }} \
+          docker buildx build --load --platform ${{ matrix.platform }} \
             --build-arg ARCH=${{ matrix.arch }} \
-            --build-arg SPC_COMPILER_EXTRA='${{ matrix.compiler_extra }}' \
+            --build-arg PHP_CFLAGS_EXTRA='${{ matrix.cflags_extra }}' \
             -t sculpin-build:${{ matrix.arch }} -f Dockerfile .
           docker create --name temp-container sculpin-build:${{ matrix.arch }}
           docker cp temp-container:/app/sculpin-linux-${{ matrix.arch }} .

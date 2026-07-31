@@ -1,0 +1,45 @@
+# Builds the same static binaries as .github/workflows/build-linux.yml.
+#   mkdir -p build
+#   docker compose up --build              # all 3 binaries -> ./build/
+services:
+  x86_64:
+    build:
+      context: .
+      platforms:
+        - linux/amd64
+      args:
+        ARCH: x86_64
+    image: sculpin-build:x86_64
+    platform: linux/amd64
+    command: sh -c "cp /app/sculpin-linux-x86_64 /out/ && chown $(stat -c %u:%g /out) /out/sculpin-linux-x86_64"
+    volumes:
+      - ./build:/out
+
+  aarch64:
+    build:
+      context: .
+      platforms:
+        - linux/arm64
+      args:
+        ARCH: aarch64
+        SPC_CONCURRENCY: 4
+    image: sculpin-build:aarch64
+    platform: linux/arm64
+    command: sh -c "cp /app/sculpin-linux-aarch64 /out/ && chown $(stat -c %u:%g /out) /out/sculpin-linux-aarch64"
+    volumes:
+      - ./build:/out
+
+  armv7l:
+    build:
+      context: .
+      platforms:
+        - linux/arm/v7
+      args:
+        ARCH: armv7l
+        # php_micro_fileinfo.c omits `typedef Elf32_Shdr Elf_Shdr` in arm32
+        PHP_CFLAGS_EXTRA: -DElf_Shdr=Elf32_Shdr
+    image: sculpin-build:armv7l
+    platform: linux/arm/v7
+    command: sh -c "cp /app/sculpin-linux-armv7l /out/ && chown $(stat -c %u:%g /out) /out/sculpin-linux-armv7l"
+    volumes:
+      - ./build:/out
